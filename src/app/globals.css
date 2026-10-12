@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/*
+ * SolarGuard AI design tokens.
+ * Every colour, radius, shadow and layout dimension used by components lives here.
+ * Components must use these tokens (bg-surface, text-ink-muted, ...) instead of raw hex values.
+ */
+@theme {
+  /* Surfaces */
+  --color-canvas: #f6f5f0;
+  --color-surface: #ffffff;
+  --color-sunken: #eeede5;
+
+  /* Text */
+  --color-ink: #14201d;
+  --color-ink-muted: #51605b;
+  --color-ink-subtle: #6b7873;
+
+  /* Borders */
+  --color-line: #dedcd1;
+  --color-line-strong: #c6c3b4;
+
+  /* Navigation (deep pine) */
+  --color-pine-950: #08201c;
+  --color-pine-900: #0b2a25;
+  --color-pine-800: #12392f;
+  --color-pine-700: #1b4d41;
+  --color-pine-300: #9fc2b7;
+  --color-pine-100: #d6e7e0;
+
+  /* Primary / positive (emerald) */
+  --color-primary: #0e7c61;
+  --color-primary-strong: #0a634e;
+  --color-primary-soft: #e0f2ea;
+  --color-lime: #b9e34b;
+
+  /* Status */
+  --color-warn: #8f5206;
+  --color-warn-soft: #fbefd6;
+  --color-warn-line: #e6c88d;
+  --color-crit: #b3261e;
+  --color-crit-soft: #fce8e5;
+  --color-crit-line: #eab3ad;
+  --color-info: #1f5f8b;
+  --color-info-soft: #e3eef6;
+  --color-info-line: #a9c7dd;
+  --color-offline: #5b5f66;
+  --color-offline-soft: #ececee;
+
+  /* Focus */
+  --color-focus: #1b6fd1;
+
+  /* Chart series (used with redundant line-style cues) */
+  --color-series-actual: #0e7c61;
+  --color-series-expected: #51605b;
+
+  /* Typography: system stack, no network font fetch at build time */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", "Noto Sans Bengali", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Radii */
+  --radius-card: 10px;
+  --radius-ctl: 8px;
+
+  /* Elevation */
+  --shadow-card: 0 1px 2px rgb(20 32 29 / 0.05), 0 0 0 1px rgb(20 32 29 / 0.02);
+  --shadow-pop: 0 8px 24px rgb(8 32 28 / 0.14);
+}
+
+:root {
+  --sidebar-w: 15.5rem;
+  --topbar-h: 3.75rem;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--topbar-h) + 1rem);
+}
+
+@keyframes sg-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.sg-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-sunken) 25%,
+    #f7f6f1 50%,
+    var(--color-sunken) 75%
+  );
+  background-size: 200% 100%;
+  animation: sg-shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}
