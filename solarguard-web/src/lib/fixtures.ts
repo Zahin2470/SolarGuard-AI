@@ -199,17 +199,54 @@ export interface FleetPoint {
   reporting: number;
 }
 
+export type AlertStatus = "linked" | "closed";
+
+export interface AlertSummary {
+  id: string;
+  siteId: string;
+  siteName: string;
+  severity: Severity;
+  status: AlertStatus;
+  title: string;
+  detectedAt: number;
+  /** Start of the evidence window shown on the chart (epoch ms). */
+  windowFrom: number;
+  windowLabel: string;
+  persistence: string;
+  /** (expected - actual) / expected over the evidence window, percent; null if not computable. */
+  deviationPct: number | null;
+  /** Observed facts only. */
+  evidence: string[];
+  /** Hypothesis, never a confirmed diagnosis. */
+  probableCause: string;
+  alternativeCauses: string[];
+  confidence: number;
+  recommendedCheck: string;
+  whatWouldDisconfirm: string;
+  /** Things the available data cannot show. */
+  notObservable: string[];
+  caseId: string;
+  /** True when the evidence window predates the demo history, so no chart can be drawn. */
+  outsideHistory?: boolean;
+}
+
 export interface FleetData {
   sites: SiteSummary[];
   cases: RecoveryCaseSummary[];
   activity: ActivityItem[];
+  alerts: AlertSummary[];
   series: FleetPoint[];
+  siteSeries: Record<string, PowerPoint[]>;
   now: number;
   sitesTotal: number;
 }
 
 function last24h(points: PowerPoint[]): PowerPoint[] {
   return points.slice(-24);
+}
+
+function formatKwh(n: number): string {
+  return Math.round(n).toLocaleString("en-US");
 }
 
 function pct(n: number, digits = 0): string {
@@ -417,11 +454,145 @@ export function buildFleetData(): FleetData {
     },
   ];
 
+  const s1Points = siteSeries.get("DEMO-01")!;
+  const s2Points = siteSeries.get("DEMO-02")!;
+  const s1Window = summariseEnergy(
+    s1Points.filter((p) => p.t >= s1Fault.startsAt),
+    INTERVAL_HOURS,
+  );
+  const s2Window = summariseEnergy(s2Points, INTERVAL_HOURS);
+
+  const COMMON_NOT_OBSERVABLE = [
+    "String-level currents and voltages (only site AC power is in this data)",
+    "Irradiance sensor health (expected power uses the demo weather factor)",
+    "Curtailment or export-limit flags",
+  ];
+
+  const alerts: AlertSummary[] = [
+    {
+      id: "AL-0021",
+      siteId: s1.id,
+      siteName: s1.name,
+      severity: "critical",
+      status: "linked",
+      title: "Sustained output below expected",
+      detectedAt: DEMO_NOW - 26 * HOUR,
+      windowFrom: s1Fault.startsAt,
+      windowLabel: "Since onset",
+      persistence: `${s1ProdHours} production hours since onset`,
+      deviationPct: s1Window.gapPct,
+      evidence: [
+        `Output ${(s1Window.gapPct ?? 0).toFixed(1)}% below expected since onset (${formatKwh(s1Window.gapKwh)} kWh shortfall)`,
+        "The shortfall is steady across production hours rather than shaped like cloud cover",
+        "The site reported continuously, with no missing intervals in the window",
+      ],
+      probableCause:
+        "A single string or combiner-level fault reducing DC input (hypothesis, not confirmed)",
+      alternativeCauses: [
+        "Irradiance sensor drift lowering the model's expected power",
+        "Inverter derating",
+        "Partial shading from a new obstruction",
+      ],
+      confidence: 0.78,
+      recommendedCheck:
+        "Inspect combiner box and string currents before the next production day.",
+      whatWouldDisconfirm:
+        "If a neighbouring site shows the same shortfall, suspect the weather/irradiance input rather than this site's hardware.",
+      notObservable: COMMON_NOT_OBSERVABLE,
+      caseId: "RC-0007",
+    },
+    {
+      id: "AL-0020",
+      siteId: s2.id,
+      siteName: s2.name,
+      severity: "warning",
+      status: "linked",
+      title: "Uniform output shortfall",
+      detectedAt: DEMO_NOW - 50 * HOUR,
+      windowFrom: s2Points[0].t,
+      windowLabel: "Last 72 h",
+      persistence: "All three days in the 72 h window",
+      deviationPct: s2Window.gapPct,
+      evidence: [
+        `Output ${(s2Window.gapPct ?? 0).toFixed(1)}% below expected over the last 72 h`,
+        "The shortfall is similar every day and uniform across the day",
+      ],
+      probableCause:
+        "Soiling or a fixed derate (hypothesis, not confirmed; the pattern cannot separate them)",
+      alternativeCauses: [
+        "Inverter power limit or derate",
+        "Module degradation",
+        "Constant offset in the expected-power model",
+      ],
+      confidence: 0.55,
+      recommendedCheck:
+        "Visual inspection and a cleaning trial; compare 7 days before and after.",
+      whatWouldDisconfirm:
+        "No improvement after cleaning would point away from soiling.",
+      notObservable: COMMON_NOT_OBSERVABLE,
+      caseId: "RC-0006",
+    },
+    {
+      id: "AL-0022",
+      siteId: s5.id,
+      siteName: s5.name,
+      severity: "warning",
+      status: "linked",
+      title: "Site stopped reporting",
+      detectedAt: DEMO_NOW - 1 * HOUR,
+      windowFrom: DEMO_NOW - 5 * HOUR,
+      windowLabel: "No-data period",
+      persistence: "5 hours without data",
+      deviationPct: null,
+      evidence: [
+        "No telemetry received since 05:00",
+        "Before the gap the site tracked expected output closely",
+      ],
+      probableCause:
+        "Logger or network connectivity loss (hypothesis; generation may be unaffected)",
+      alternativeCauses: ["Inverter shutdown", "Power loss at the gateway"],
+      confidence: 0.9,
+      recommendedCheck:
+        "Check logger / gateway connectivity and inverter status on site.",
+      whatWouldDisconfirm:
+        "Backfilled data showing normal output would confirm a communication gap only.",
+      notObservable: [
+        "Whether the inverter is producing during the gap",
+        ...COMMON_NOT_OBSERVABLE.slice(0, 1),
+      ],
+      caseId: "RC-0008",
+    },
+    {
+      id: "AL-0017",
+      siteId: "DEMO-06",
+      siteName: "Warehouse C",
+      severity: "info",
+      status: "closed",
+      title: "Inverter trip and restart",
+      detectedAt: DEMO_NOW - 122 * HOUR,
+      windowFrom: DEMO_NOW - 122 * HOUR,
+      windowLabel: "Older than demo history",
+      persistence: "1 day",
+      deviationPct: null,
+      evidence: ["Single-day production dip recorded by the operator"],
+      probableCause: "Inverter trip, cleared by a restart (operator-recorded)",
+      alternativeCauses: [],
+      confidence: 0.85,
+      recommendedCheck: "None. Closed; outcome recorded as inconclusive.",
+      whatWouldDisconfirm: "n/a",
+      notObservable: ["Telemetry for this window is outside the 72 h demo history"],
+      caseId: "RC-0005",
+      outsideHistory: true,
+    },
+  ];
+
   return {
     sites,
     cases,
     activity,
+    alerts,
     series,
+    siteSeries: Object.fromEntries(siteSeries),
     now: DEMO_NOW,
     sitesTotal: sites.length,
   };

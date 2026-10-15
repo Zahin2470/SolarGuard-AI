@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import { Search } from "lucide-react";
+import Link from "next/link";
 import { useId, useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/States";
 import { StatusChip } from "@/components/ui/StatusChip";
@@ -9,6 +10,20 @@ import type { SiteSummary } from "@/lib/fixtures";
 import { formatAgo, formatNumber, formatPct, formatTime } from "@/lib/format";
 
 type Filter = "all" | "attention" | "healthy";
+type SortKey = "attention" | "name" | "ratio" | "capacity";
+const SORTS: { id: SortKey; label: string }[] = [
+  { id: "attention", label: "Needs attention first" },
+  { id: "name", label: "Name (A to Z)" },
+  { id: "ratio", label: "24 h ratio (lowest first)" },
+  { id: "capacity", label: "Capacity (largest first)" },
+];
+const STATUS_ORDER: Record<SiteSummary["status"], number> = {
+  critical: 0,
+  warning: 1,
+  stale: 2,
+  healthy: 3,
+};
+
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "attention", label: "Needs attention" },
@@ -28,11 +43,13 @@ function PrCell({ site }: { site: SiteSummary }) {
 export function SitesTable({ sites, now }: { sites: SiteSummary[]; now: number }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("attention");
   const searchId = useId();
+  const sortId = useId();
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return sites.filter((s) => {
+    const list = sites.filter((s) => {
       if (filter === "attention" && s.status === "healthy") return false;
       if (filter === "healthy" && s.status !== "healthy") return false;
       if (!q) return true;
@@ -42,7 +59,14 @@ export function SitesTable({ sites, now }: { sites: SiteSummary[]; now: number }
         s.location.toLowerCase().includes(q)
       );
     });
-  }, [sites, filter, query]);
+    return [...list].sort((a, b) => {
+      if (sort === "name") return a.name.localeCompare(b.name);
+      if (sort === "capacity") return b.capacityKwp - a.capacityKwp;
+      if (sort === "ratio")
+        return (a.performanceRatioPct ?? 999) - (b.performanceRatioPct ?? 999);
+      return STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name);
+    });
+  }, [sites, filter, query, sort]);
 
   const counts = {
     all: sites.length,
@@ -70,6 +94,22 @@ export function SitesTable({ sites, now }: { sites: SiteSummary[]; now: number }
           ))}
         </div>
 
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <label htmlFor={sortId} className="sr-only">
+            Sort sites
+          </label>
+          <select
+            id={sortId}
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className="rounded-ctl border border-line bg-surface px-2.5 py-2 text-sm text-ink"
+          >
+            {SORTS.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         <div className="relative w-full sm:w-64">
           <label htmlFor={searchId} className="sr-only">
             Search sites
@@ -83,6 +123,7 @@ export function SitesTable({ sites, now }: { sites: SiteSummary[]; now: number }
             placeholder="Search name, ID or location"
             className="w-full rounded-ctl border border-line bg-surface py-2 pl-8 pr-3 text-sm text-ink placeholder:text-ink-subtle"
           />
+        </div>
         </div>
       </div>
 
@@ -124,7 +165,9 @@ export function SitesTable({ sites, now }: { sites: SiteSummary[]; now: number }
                 {visible.map((s) => (
                   <tr key={s.id} className="border-b border-line last:border-0">
                     <th scope="row" className="py-3 pr-3 text-left font-normal">
-                      <p className="font-semibold text-ink">{s.name}</p>
+                      <Link href={`/sites/${s.id}`} className="font-semibold text-ink underline-offset-2 hover:text-primary-strong hover:underline">
+                        {s.name}
+                      </Link>
                       <p className="text-xs text-ink-muted">
                         {s.id} · {s.location}
                       </p>
@@ -169,7 +212,9 @@ export function SitesTable({ sites, now }: { sites: SiteSummary[]; now: number }
               <li key={s.id} className="rounded-lg border border-line p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-ink">{s.name}</p>
+                    <Link href={`/sites/${s.id}`} className="font-semibold text-ink underline-offset-2 hover:text-primary-strong hover:underline">
+                      {s.name}
+                    </Link>
                     <p className="text-xs text-ink-muted">
                       {s.id} · {s.location}
                     </p>

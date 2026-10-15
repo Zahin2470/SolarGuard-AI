@@ -2,17 +2,11 @@ import { ArrowRight, UserRound } from "lucide-react";
 import { EmptyState } from "@/components/ui/States";
 import { ImpactStatusLabel } from "@/components/ui/ImpactStatusLabel";
 import { StatusChip } from "@/components/ui/StatusChip";
-import { confidenceBand, type CaseStatus } from "@/lib/domain";
+import { VerificationLabel } from "@/components/ui/VerificationLabel";
+import { confidenceBand } from "@/lib/domain";
+import { CASE_STATUS_LABEL as STATUS_LABEL } from "@/lib/labels";
 import type { FleetOverview } from "@/lib/api/fleet";
 import { formatNumber } from "@/lib/format";
-
-const STATUS_LABEL: Record<CaseStatus, string> = {
-  needs_review: "Needs review",
-  confirmed: "Confirmed",
-  action_assigned: "Action assigned",
-  in_progress: "In progress",
-  resolved: "Resolved",
-};
 
 export function PriorityCases({
   cases,
@@ -116,10 +110,7 @@ export function PriorityCases({
                 <UserRound aria-hidden className="size-3.5" />
                 {c.owner ?? "Unassigned"}
               </span>
-              <ImpactStatusLabel
-                level={c.verification === "not_verifiable" ? "inconclusive" : "not_verified"}
-                label={c.verification === "not_verifiable" ? "Not verifiable yet" : "Outcome not yet verified"}
-              />
+              <VerificationLabel status={c.verification} />
             </div>
           </li>
         ))}

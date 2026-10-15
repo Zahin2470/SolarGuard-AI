@@ -17,8 +17,8 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Overview", icon: LayoutDashboard, built: true },
-  { href: "/sites", label: "Sites", icon: MapPinned, built: false },
-  { href: "/alerts", label: "Alerts", icon: Bell, built: false },
+  { href: "/sites", label: "Sites", icon: MapPinned, built: true },
+  { href: "/alerts", label: "Alerts", icon: Bell, built: true },
   { href: "/recovery-cases", label: "Recovery Cases", icon: LifeBuoy, built: false },
   { href: "/reports", label: "Reports & Impact", icon: FileBarChart2, built: false },
 ];

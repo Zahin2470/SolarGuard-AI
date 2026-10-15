@@ -1,6 +1,6 @@
-# SolarGuard AI: web app (Phase 1)
+# SolarGuard AI: web app (Phase 2)
 
-Design system, app shell and Fleet Overview, running on deterministic **demo fixtures**.
+Design system, app shell, Fleet Overview, Sites and Alert Center, running on deterministic **demo fixtures**.
 Nothing shown is customer telemetry or a measured result.
 
 ## Run
@@ -21,12 +21,17 @@ Node 22+, Next.js 16 (app router), React 19, Tailwind 4, Recharts, lucide-react.
 | Primitives: `Panel`, `MetricCard`, `StatusChip`, `ImpactStatusLabel`, `Skeleton`, `EmptyState`, `ErrorState`, `PageHeader` | `src/components/ui/` |
 | App shell: sidebar, topbar, mobile drawer, skip link | `src/components/shell/` |
 | Fleet Overview | `src/app/page.tsx`, `src/components/overview/` |
+| Sites list and Site Detail (`/sites`, `/sites/[id]`) | `src/app/sites/`, `src/lib/api/sites.ts` |
+| Alert Center and Alert Detail (`/alerts`, `/alerts/[id]`) | `src/app/alerts/`, `src/components/alerts/`, `src/lib/api/alerts.ts` |
+| Shared chart (gaps for no-data, evidence-window shading, table view) | `src/components/overview/PowerChart.tsx` |
 | Loading / error states | `src/app/loading.tsx`, `src/app/error.tsx` |
 | Domain maths (kW to kWh integration, priority rule) | `src/lib/domain.ts` |
 | Service boundary (swap for FastAPI client later) | `src/lib/api/fleet.ts` |
 | Demo fixtures (no `Math.random`, no `Date.now`) | `src/lib/fixtures.ts` |
 
-Sites, Alerts, Recovery Cases and Reports & Impact are routed but show a clearly labelled "not built yet" page, with no placeholder numbers.
+Recovery Cases and Reports & Impact are routed but show a clearly labelled "not built yet" page, with no placeholder numbers.
+
+Alert and site pages are read-only: assigning owners, recording actions and closing cases need the backend.
 
 ## Truthfulness rules implemented
 
@@ -39,10 +44,11 @@ Sites, Alerts, Recovery Cases and Reports & Impact are routed but show a clearly
 
 ## Not done yet
 
-- No backend, database, auth or CSV ingestion.
+- No backend, database, auth or CSV ingestion. Alert and case actions are therefore not available.
+- Alerts have no model anomaly score (rule-based demo detector); the page says so.
 - No unit tests yet (domain functions in `src/lib/domain.ts` are pure and ready for them).
 - Charts have no automated visual-regression test. Layout was checked manually at 1440, 820 and 390 px widths.
 
 ## Next phase
 
-Sites list + Site Detail, Alert Center, then FastAPI + CSV upload feeding the same `FleetOverview` contract.
+FastAPI + PostgreSQL + CSV upload feeding the same service contracts (`fleet.ts`, `sites.ts`, `alerts.ts`), then the recovery-case workflow.

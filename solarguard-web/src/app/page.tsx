@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { ActivityFeed } from "@/components/overview/ActivityFeed";
 import { PriorityCases } from "@/components/overview/PriorityCases";
-import { ProductionChart } from "@/components/overview/ProductionChart";
+import { PowerChart } from "@/components/overview/PowerChart";
 import { SitesTable } from "@/components/overview/SitesTable";
 import { ImpactStatusLabel } from "@/components/ui/ImpactStatusLabel";
 import { MetricCard } from "@/components/ui/MetricCard";
@@ -99,7 +99,7 @@ export default async function FleetOverviewPage() {
             title="Actual vs expected production"
             description="Fleet total. Expected power comes from the demo baseline model."
           >
-            <ProductionChart series={data.series} sitesTotal={data.sitesTotal} />
+            <PowerChart subject="Fleet" points={data.series} sitesTotal={data.sitesTotal} />
           </Panel>
 
           <Panel title="Recent activity">
