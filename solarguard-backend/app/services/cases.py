@@ -79,7 +79,7 @@ def create_case(session: Session, alert: Alert, actor: str = "api") -> RecoveryC
     )
     session.add(case)
     session.flush()
-    _event(session, case, "created", actor, note=f"Opened from alert {alert.id}", to_status="needs_review")
+    _event(session, case, "created", actor, note=f"Opened from alert AL-{alert.id:04d}", to_status="needs_review")
     session.flush()
     return case
 

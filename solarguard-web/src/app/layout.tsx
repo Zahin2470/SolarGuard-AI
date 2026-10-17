@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import "./globals.css";
 
@@ -16,7 +16,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <AppShell>{children}</AppShell>
+        {/* The shell reads the pathname; routes with runtime-only params need a Suspense boundary. */}
+        <Suspense fallback={<div aria-busy="true" aria-label="Loading SolarGuard" className="min-h-screen" />}>
+          <AppShell>{children}</AppShell>
+        </Suspense>
       </body>
     </html>
   );

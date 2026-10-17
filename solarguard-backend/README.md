@@ -1,4 +1,4 @@
-# SolarGuard AI: backend (Phase 3)
+# SolarGuard AI: backend (Phase 3, used by the Phase 4 web app)
 
 FastAPI service for telemetry ingestion, rule-based detection, recovery cases and outcome verification.
 SQLite by default; PostgreSQL through `DATABASE_URL`.
@@ -50,5 +50,6 @@ CSV columns: `timestamp` (ISO 8601), `power_kw` (blank = no data), optional `exp
 - Hours are bucketed in UTC; sites on a half-hour offset will be misaligned.
 - No user accounts or roles. One optional shared `X-API-Key`. Tenant isolation is not implemented.
 - Tables are created at startup; there are no migrations yet.
+- Opening a case from an alert works whether the alert is still open or has ended; the web app lists every alert that has no case.
 - Tested here with SQLite only. The Dockerfile, compose file and PostgreSQL path were written but not run in this environment (no Docker daemon, no Postgres).
 - No tariff or carbon figures: no sourced inputs.

@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
 /** Standard content panel: titled section with optional description and header action. */
 export function Panel({
@@ -19,7 +19,8 @@ export function Panel({
   className?: string;
   bodyClassName?: string;
 }) {
-  const headingId = id ? `${id}-heading` : undefined;
+  const autoId = useId();
+  const headingId = `${id ?? autoId}-heading`;
   return (
     <section
       id={id}

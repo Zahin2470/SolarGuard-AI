@@ -20,7 +20,8 @@ export interface ChartPoint {
   t: number;
   /** Mean actual power over the hour (kW). null = no data, which is NOT zero output. */
   actualKw: number | null;
-  expectedKw: number;
+  /** null = no expected value for this hour (never treated as zero). */
+  expectedKw: number | null;
   /** Fleet mode only: how many sites contributed to this point. */
   reporting?: number;
 }
@@ -44,7 +45,7 @@ function TooltipBody({
   if (!active || !payload?.length) return null;
   const r = payload[0].payload;
   const dev =
-    r.actualKw !== null && r.expectedKw > 0
+    r.actualKw !== null && r.expectedKw !== null && r.expectedKw > 0
       ? ((r.actualKw - r.expectedKw) / r.expectedKw) * 100
       : null;
   return (
@@ -61,8 +62,10 @@ function TooltipBody({
           </dd>
         </div>
         <div className="flex justify-between gap-6">
-          <dt className="text-ink-muted">Expected (model)</dt>
-          <dd className="font-semibold text-ink">{formatNumber(r.expectedKw, 1)} kW</dd>
+          <dt className="text-ink-muted">Expected</dt>
+          <dd className="font-semibold text-ink">
+            {r.expectedKw === null ? "n/a" : `${formatNumber(r.expectedKw, 1)} kW`}
+          </dd>
         </div>
         {dev !== null ? (
           <div className="flex justify-between gap-6">
@@ -100,6 +103,7 @@ export function PowerChart({
   subject,
   defaultRange = "24h",
   showRangeTabs = true,
+  expectedLabel = "Expected power, model (kW)",
 }: {
   points: ChartPoint[];
   /** Fleet mode: total number of sites, used to flag partially reporting hours. */
@@ -110,6 +114,8 @@ export function PowerChart({
   subject: string;
   defaultRange?: Range;
   showRangeTabs?: boolean;
+  /** Legend text for the expected series; say where the baseline came from. */
+  expectedLabel?: string;
 }) {
   const [range, setRange] = useState<Range>(defaultRange);
   const tableId = useId();
@@ -137,7 +143,7 @@ export function PowerChart({
       ? ([Math.max(highlight.from, rows[0].t), rows[rows.length - 1].t] as [number, number])
       : null;
 
-  const peak = Math.max(...rows.map((r) => Math.max(r.actualKw ?? 0, r.expectedKw)));
+  const peak = Math.max(...rows.map((r) => Math.max(r.actualKw ?? 0, r.expectedKw ?? 0)));
   const step = peak > 600 ? 100 : 50;
   const yMax = Math.max(step, Math.ceil((peak * 1.08) / step) * step);
   const rangeLabel = RANGES.find((r) => r.id === range)!.label.toLowerCase();
@@ -156,7 +162,7 @@ export function PowerChart({
             <svg aria-hidden width="26" height="8">
               <line x1="0" y1="4" x2="26" y2="4" stroke="var(--color-series-expected)" strokeWidth="2" strokeDasharray="5 4" />
             </svg>
-            Expected power, model (kW)
+            {expectedLabel}
           </li>
           {partial ? (
             <li className="flex items-center gap-2">
@@ -339,7 +345,9 @@ export function PowerChart({
                   <td className="px-3 py-1.5 text-right">
                     {r.actualKw === null ? "No data" : formatNumber(r.actualKw, 1)}
                   </td>
-                  <td className="px-3 py-1.5 text-right">{formatNumber(r.expectedKw, 1)}</td>
+                  <td className="px-3 py-1.5 text-right">
+                    {r.expectedKw === null ? "n/a" : formatNumber(r.expectedKw, 1)}
+                  </td>
                   {sitesTotal !== undefined ? (
                     <td className="px-3 py-1.5 text-right">
                       {r.reporting}/{sitesTotal}

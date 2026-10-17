@@ -83,8 +83,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="border-t border-white/10 p-4 text-xs leading-relaxed text-pine-300">
-        <p className="font-semibold text-pine-100">Demo workspace</p>
-        <p>Fixture data only. No customer telemetry is connected.</p>
+        <p className="font-semibold text-pine-100">Data sources</p>
+        <p>
+          Overview, Sites and Alerts show demo fixtures. Recovery Cases and Upload data read the live API.
+        </p>
       </div>
     </div>
   );
