@@ -1,36 +1,34 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Activity, BatteryCharging, Database, Gauge, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ApiProblem } from "@/components/cases/ApiProblem";
 import { PowerChart } from "@/components/overview/PowerChart";
 import { ImpactStatusLabel } from "@/components/ui/ImpactStatusLabel";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
-import { EmptyState } from "@/components/ui/States";
+import { EmptyState, Skeleton } from "@/components/ui/States";
+import { SourceBadge } from "@/components/ui/SourceBadge";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { VerificationLabel } from "@/components/ui/VerificationLabel";
-import { getSiteDetail, listSiteIds } from "@/lib/api/sites";
-import { CASE_STATUS_LABEL } from "@/lib/labels";
+import { settle } from "@/lib/api/settle";
+import { getSiteDetail } from "@/lib/api/sites";
 import { formatDayTime, formatNumber, formatPct, TIME_ZONE } from "@/lib/format";
 
-export async function generateStaticParams() {
-  return (await listSiteIds()).map((id) => ({ id }));
-}
+export const metadata: Metadata = { title: "Site" };
 
-export async function generateMetadata({ params }: PageProps<"/sites/[id]">): Promise<Metadata> {
+async function SiteDetailView({ params }: { params: PageProps<"/sites/[id]">["params"] }) {
   const { id } = await params;
-  const d = await getSiteDetail(id);
-  return { title: d ? d.site.name : "Site not found" };
-}
-
-export default async function SiteDetailPage({ params }: PageProps<"/sites/[id]">) {
-  const { id } = await params;
-  const d = await getSiteDetail(id);
+  const res = await settle(getSiteDetail(id));
+  if (!res.ok) return <ApiProblem error={res.error} />;
+  const d = res.value;
   if (!d) notFound();
 
   const { site, quality, energy72h } = d;
   const stale = site.status === "stale";
+  const noData = quality.windowHours === 0;
 
   return (
     <div className="space-y-6">
@@ -56,7 +54,7 @@ export default async function SiteDetailPage({ params }: PageProps<"/sites/[id]"
                 ? "No data received"
                 : `Data through ${formatDayTime(quality.lastReportedEnd)} (${TIME_ZONE})`}
             </span>
-            <ImpactStatusLabel level="demo" />
+            <SourceBadge source={d.source} />
           </>
         }
       />
@@ -70,17 +68,19 @@ export default async function SiteDetailPage({ params }: PageProps<"/sites/[id]"
           context={stale ? "Site is not reporting" : "Mean over the latest complete hour"}
         />
         <MetricCard
-          label="Energy, last 24 h"
+          label="Energy, latest 24 h of data"
           icon={BatteryCharging}
-          value={formatNumber(site.actualKwh24h)}
-          unit="kWh"
+          value={noData ? "No data" : formatNumber(site.actualKwh24h)}
+          unit={noData ? undefined : "kWh"}
           badge={
-            <ImpactStatusLabel
-              level="estimated"
-              label={`Gap ${formatNumber(site.gapKwh24h)} kWh`}
-            />
+            noData ? undefined : (
+              <ImpactStatusLabel
+                level="estimated"
+                label={`Gap ${formatNumber(site.gapKwh24h)} kWh`}
+              />
+            )
           }
-          context={`Expected ${formatNumber(site.expectedKwh24h)} kWh`}
+          context={noData ? "No telemetry uploaded" : `Expected ${formatNumber(site.expectedKwh24h)} kWh`}
         />
         <MetricCard
           label="24 h actual ÷ expected"
@@ -97,20 +97,28 @@ export default async function SiteDetailPage({ params }: PageProps<"/sites/[id]"
           label="Data completeness, 72 h"
           icon={Database}
           tone={quality.missingIntervals > 0 ? "attention" : "default"}
-          value={formatPct(quality.completenessPct, 0)}
-          context={`${quality.receivedIntervals} of ${quality.expectedIntervals} hourly intervals received`}
+          value={noData ? "No data" : formatPct(quality.completenessPct, 0)}
+          context={
+            noData
+              ? "No telemetry uploaded"
+              : `${quality.receivedIntervals} of ${quality.expectedIntervals} hourly intervals received`
+          }
         />
       </section>
 
       <Panel
         title="Actual vs expected production"
-        description="Expected power comes from the demo baseline model."
+        description={
+          d.source === "demo"
+            ? "Expected power comes from the demo baseline model."
+            : "Expected power is the value stored with the upload: provided, or derived from the site's own history."
+        }
       >
         <PowerChart subject={site.name} points={d.series} />
       </Panel>
 
-      <div className="grid items-start gap-6 xl:grid-cols-12">
-        <div className="space-y-6 xl:col-span-7">
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
+        <div className="min-w-0 space-y-6 xl:col-span-7">
           <Panel title="Alerts" description="Detected deviations for this site.">
             {d.alerts.length === 0 ? (
               <EmptyState title="No alerts for this site">
@@ -157,16 +165,22 @@ export default async function SiteDetailPage({ params }: PageProps<"/sites/[id]"
                 {d.cases.map((c) => (
                   <li key={c.id} className="py-3 first:pt-0 last:pb-0">
                     <p className="text-sm font-semibold text-ink">
-                      {c.id}: {c.title}
+                      {c.href ? (
+                        <Link href={c.href} className="underline-offset-2 hover:text-primary-strong hover:underline">
+                          {c.id}: {c.title}
+                        </Link>
+                      ) : (
+                        `${c.id}: ${c.title}`
+                      )}
                     </p>
                     <p className="mt-0.5 text-xs text-ink-muted">
-                      {CASE_STATUS_LABEL[c.status]} · Owner: {c.owner ?? "Unassigned"}
+                      {c.statusLabel} · Owner: {c.owner ?? "Unassigned"}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <VerificationLabel status={c.verification} />
                     </div>
-                    {c.verificationNote ? (
-                      <p className="mt-1.5 text-xs text-ink-muted">{c.verificationNote}</p>
+                    {c.note ? (
+                      <p className="mt-1.5 text-xs text-ink-muted">{c.note}</p>
                     ) : null}
                   </li>
                 ))}
@@ -221,5 +235,21 @@ export default async function SiteDetailPage({ params }: PageProps<"/sites/[id]"
         </Panel>
       </div>
     </div>
+  );
+}
+
+export default function SiteDetailPage({ params }: PageProps<"/sites/[id]">) {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6" aria-busy="true" aria-label="Loading site">
+          <Skeleton className="h-10 w-2/3" />
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+      }
+    >
+      <SiteDetailView params={params} />
+    </Suspense>
   );
 }

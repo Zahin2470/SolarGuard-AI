@@ -1,10 +1,10 @@
 """REST endpoints, organised around business actions rather than model functions."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
-from sqlalchemy import select
+from sqlalchemy import case as sql_case, func, select
 from sqlalchemy.orm import Session
 
 from .config import DetectionConfig, VerifyConfig
@@ -17,6 +17,7 @@ from .schemas import (
     CaseOut,
     DetectionResult,
     IngestReportOut,
+    SiteDataSummaryOut,
     SiteIn,
     SiteOut,
     TelemetryOut,
@@ -30,6 +31,13 @@ from .services.detect import detect_site
 from .services.ingest import IngestError, parse_csv, store_points
 
 router = APIRouter()
+
+
+def _aware(ts: datetime | None) -> datetime | None:
+    """Aggregate columns bypass the UTCDateTime type, so re-attach UTC to naive stored values."""
+    if ts is None:
+        return None
+    return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
 
 
 def _site_or_404(session: Session, site_id: str) -> Site:
@@ -75,6 +83,44 @@ def create_site(body: SiteIn, session: Session = Depends(get_session)) -> Site:
 @router.get("/sites", response_model=list[SiteOut])
 def list_sites(session: Session = Depends(get_session)) -> list[Site]:
     return list(session.scalars(select(Site).order_by(Site.id)))
+
+
+@router.get("/sites/summary", response_model=list[SiteDataSummaryOut])
+def sites_summary(session: Session = Depends(get_session)) -> list[SiteDataSummaryOut]:
+    """Per-site telemetry extent. Declared before /sites/{site_id} so 'summary' is not read as an id."""
+    agg = {
+        row.site_id: row
+        for row in session.execute(
+            select(
+                Telemetry.site_id,
+                func.count().label("n"),
+                func.min(Telemetry.ts).label("first_ts"),
+                func.max(Telemetry.ts).label("last_ts"),
+                func.max(sql_case((Telemetry.actual_kw.is_not(None), Telemetry.ts))).label("last_data_ts"),
+            ).group_by(Telemetry.site_id)
+        )
+    }
+    sources: dict[str, set[str]] = {}
+    for site_id, src in session.execute(
+        select(Telemetry.site_id, Telemetry.expected_source)
+        .where(Telemetry.expected_source.is_not(None))
+        .distinct()
+    ):
+        sources.setdefault(site_id, set()).add(src)
+    out: list[SiteDataSummaryOut] = []
+    for site in session.scalars(select(Site).order_by(Site.id)):
+        a = agg.get(site.id)
+        out.append(
+            SiteDataSummaryOut(
+                site_id=site.id,
+                hours_stored=a.n if a else 0,
+                first_hour=_aware(a.first_ts) if a else None,
+                last_hour=_aware(a.last_ts) if a else None,
+                last_hour_with_data=_aware(a.last_data_ts) if a else None,
+                expected_sources=sorted(sources.get(site.id, set())),
+            )
+        )
+    return out
 
 
 @router.get("/sites/{site_id}", response_model=SiteOut)

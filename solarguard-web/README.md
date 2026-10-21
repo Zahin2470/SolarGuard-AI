@@ -1,11 +1,11 @@
-# SolarGuard AI: web app (Phase 4)
+# SolarGuard AI: web app (Phase 5)
 
-Two kinds of screens, labelled in the top bar:
+Every data page shows a source badge:
 
-- **Live API data**: Recovery Cases (queue, case detail, workflow actions, verification) and Upload data. These read and write the FastAPI backend.
-- **Demo data**: Overview, Sites, Alerts. Deterministic fixtures, not customer telemetry. They are **not** connected to the backend yet, so a site or alert you upload will not appear there.
+- **Live API data**: all screens when `SOLARGUARD_API_URL` is set (Overview, Sites, Site detail, Alerts, Alert detail, Recovery Cases, Upload).
+- **Demo data**: Overview, Sites and Alerts fall back to deterministic fixtures **only when no API is configured**. If an API is configured but unreachable, the page shows an error; it never substitutes demo data. Recovery Cases and Upload need the API and show "not connected" without it.
 
-Nothing on a demo screen is a measured result.
+Nothing on a demo screen is customer telemetry or a measured result.
 
 ## Run
 
@@ -17,7 +17,7 @@ npm run lint && npx tsc --noEmit && npm run build
 ```
 
 Backend (separate folder): `uvicorn app.main:app --port 8000`, then `SOLARGUARD_API_URL=http://localhost:8000`.
-Both variables are server-only: the API key never reaches the browser. Without `SOLARGUARD_API_URL` the live screens show a "not connected" state; they never fall back to sample cases.
+Both variables are server-only: the API key never reaches the browser.
 
 Node 22+, Next.js 16 (app router), React 19, Tailwind 4, Recharts, lucide-react.
 
@@ -47,6 +47,25 @@ Node 22+, Next.js 16 (app router), React 19, Tailwind 4, Recharts, lucide-react.
 | Server actions (validate, call API, revalidate) | `src/app/recovery-cases/actions.ts`, `src/app/upload/actions.ts` |
 | CSV upload with site registration and ingest report | `src/app/upload/`, `src/components/cases/UploadForm.tsx` |
 
+### Phase 5: live Overview, Sites, Alerts
+
+| Area | Where |
+|---|---|
+| Live/demo dispatch per screen | `src/lib/api/fleet.ts`, `sites.ts`, `alerts.ts` |
+| API to view-model adapters (site status, fleet series, 24 h figures, alert rows) | `src/lib/api/live-fleet.ts` |
+| Shared view models so lists never need fields one source cannot supply | `src/lib/view.ts` |
+| Live alert detail (no invented cause or confidence) | `src/components/alerts/LiveAlertDetail.tsx` (demo: `DemoAlertDetail.tsx`) |
+| Live priority cases, stale-data notice, source badge | `src/components/overview/LivePriorityCases.tsx`, `ui/StaleDataNotice.tsx`, `ui/SourceBadge.tsx` |
+
+How live figures are derived (so you can challenge them):
+
+- **Time anchor.** Fleet chart, 24 h figures and site series end at the latest hour that has data. If that is older than 6 hours, a notice says so and the figures describe that last period, not the present.
+- **Site status.** Not reporting = no data for 6 hours by the wall clock (or never uploaded). Otherwise critical or warning from the worst *open* alert, else healthy. Closed alerts do not change status.
+- **Energy.** mean kW x 1 h over hours with both an actual and an expected value, for actual and expected alike. Missing hours are gaps and are counted as skipped.
+- **Fleet series.** Per hour, sums only sites with both values; hours where no site qualifies are blank, not zero. "Not all sites reporting" is judged against sites that have any telemetry.
+- **Alerts.** Shown as detected deviations. The rule-based detector supplies no cause, confidence or recommended check, so none is displayed; a person records a hypothesis on the recovery case.
+- **Activity feed.** Alert detections and each case's opened and last-updated events (the list endpoint carries no full history).
+
 Reports & Impact is still a labelled "not built yet" page, with no placeholder numbers.
 
 ## Truthfulness rules implemented
@@ -68,13 +87,14 @@ Reports & Impact is still a labelled "not built yet" page, with no placeholder n
 
 ## Not done yet
 
-- Overview, Sites and Alerts still run on fixtures; they do not read the backend. Their priority rule (confidence-weighted) differs from the backend's (severity, then estimated gap) until they are connected.
+- Live Overview, Sites and Alerts make several API calls per render (one telemetry call per site). Fine for a pilot; a large fleet needs a server-side summary endpoint.
+- The demo fixtures still rank cases by confidence x recoverable energy; live data ranks by severity, then estimated gap (no confidence exists).
 - No authentication or roles. "Acting as" is not an identity.
-- `/recovery-cases/NOPE` and the demo `/sites/NOPE` return HTTP 200 with the not-found UI (streaming); not fixed.
+- Unknown ids (`/sites/NOPE`, `/alerts/AL-9999`, `/recovery-cases/RC-9999`) show the not-found page but return HTTP 200 (streaming); not fixed.
 - Alerts have no model anomaly score (rule-based detector); the page says so.
 - No unit tests yet, and the live-screen flows were checked with a scripted headless-browser run (not committed as a test suite). Domain functions in `src/lib/domain.ts` are pure and ready for them).
 - Charts have no automated visual-regression test. Layout was checked manually at 1440, 820 and 390 px widths.
 
 ## Next phase
 
-Connect Overview, Sites and Alerts to the API, then Reports & Impact (ledger of verified, measured and potential figures, kept separate), then frontend tests.
+Reports & Impact (ledger of verified, measured and potential figures, kept separate), then frontend tests.

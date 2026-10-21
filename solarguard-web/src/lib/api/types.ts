@@ -11,11 +11,21 @@ export interface ApiSite {
   created_at: string;
 }
 
+export interface ApiSiteDataSummary {
+  site_id: string;
+  hours_stored: number;
+  first_hour: string | null;
+  last_hour: string | null;
+  /** Latest hour whose actual power is not null. */
+  last_hour_with_data: string | null;
+  expected_sources: string[];
+}
+
 export interface ApiTelemetryRow {
   ts: string;
   actual_kw: number | null;
   expected_kw: number | null;
-  expected_source: "provided" | "derived" | null;
+  expected_source: string | null; // "provided" or "trailing_median" (derived)
 }
 
 export interface ApiAlert {

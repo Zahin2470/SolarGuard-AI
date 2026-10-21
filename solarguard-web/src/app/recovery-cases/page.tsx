@@ -6,6 +6,7 @@ import { CaseQueue } from "@/components/cases/CaseQueue";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { Skeleton } from "@/components/ui/States";
+import { SourceBadge } from "@/components/ui/SourceBadge";
 import { listAlerts, listCases } from "@/lib/api/live";
 import { settle } from "@/lib/api/settle";
 
@@ -38,6 +39,7 @@ export default function RecoveryCasesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Recovery Cases"
+        meta={<SourceBadge source="api" />}
         description="Follow each issue from detection to a recorded action to an honest outcome status. Nothing here is counted as recovered energy until a documented comparison supports it."
       />
 

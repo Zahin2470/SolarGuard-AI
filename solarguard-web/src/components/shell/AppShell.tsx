@@ -1,6 +1,6 @@
 "use client";
 
-import { FlaskConical, Menu, Radio, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { findNavItem } from "./nav";
@@ -10,8 +10,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
   const current = findNavItem(pathname);
-  // Recovery Cases and Upload read the live API; Overview, Sites and Alerts still show demo fixtures.
-  const live = pathname.startsWith("/recovery-cases") || pathname.startsWith("/upload");
   const closeRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLButtonElement>(null);
 
@@ -94,23 +92,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
           </nav>
 
-          {live ? (
-            <span
-              title="This page reads records from the SolarGuard API. Nothing on it is sample data."
-              className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary-strong"
-            >
-              <Radio aria-hidden className="size-3.5" />
-              Live API data
-            </span>
-          ) : (
-            <span
-              title="This page shows illustrative fixture data, not customer telemetry."
-              className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-warn-line bg-warn-soft px-2.5 py-1 text-xs font-semibold text-warn"
-            >
-              <FlaskConical aria-hidden className="size-3.5" />
-              Demo data
-            </span>
-          )}
         </header>
 
         <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

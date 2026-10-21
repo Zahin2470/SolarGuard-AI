@@ -5,6 +5,7 @@ import { UploadForm } from "@/components/cases/UploadForm";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { Skeleton } from "@/components/ui/States";
+import { SourceBadge } from "@/components/ui/SourceBadge";
 import { listSites } from "@/lib/api/live";
 import { settle } from "@/lib/api/settle";
 
@@ -21,6 +22,7 @@ export default function UploadPage() {
     <div className="space-y-6">
       <PageHeader
         title="Upload data"
+        meta={<SourceBadge source="api" />}
         description="Add hourly or sub-hourly power telemetry for a site. The file is validated, normalised to hourly means, and checked by the detection rule."
       />
       <Panel

@@ -71,6 +71,12 @@ export interface ApiRequest {
   timeoutMs?: number;
 }
 
+/** True when an API is configured. Awaits connection() so the answer is per request, never baked in at build. */
+export async function isLive(): Promise<boolean> {
+  await connection();
+  return apiBaseUrl() !== null;
+}
+
 export async function apiFetch<T>(path: string, req: ApiRequest = {}): Promise<T> {
   // Live data and env vars must be read per request, never baked into a prerendered shell.
   await connection();

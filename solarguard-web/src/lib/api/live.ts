@@ -5,6 +5,7 @@ import type {
   ApiAlert,
   ApiCase,
   ApiSite,
+  ApiSiteDataSummary,
   ApiTelemetryRow,
   ApiUploadResult,
 } from "./types";
@@ -20,13 +21,15 @@ export const createSite = (site: {
   capacity_kwp: number;
 }) => apiFetch<ApiSite>("/sites", { method: "POST", json: site });
 
-export const listCases = (sort: "priority" | "newest" = "priority") =>
-  apiFetch<ApiCase[]>("/cases", { query: { sort } });
+export const getSitesSummary = () => apiFetch<ApiSiteDataSummary[]>("/sites/summary");
+
+export const listCases = (sort: "priority" | "newest" = "priority", siteId?: string) =>
+  apiFetch<ApiCase[]>("/cases", { query: { sort, site_id: siteId } });
 
 export const getCase = (id: string) => apiFetch<ApiCase>(`/cases/${encodeURIComponent(id)}`);
 
-export const listAlerts = (status?: "open" | "closed") =>
-  apiFetch<ApiAlert[]>("/alerts", { query: { status } });
+export const listAlerts = (status?: "open" | "closed", siteId?: string) =>
+  apiFetch<ApiAlert[]>("/alerts", { query: { status, site_id: siteId } });
 
 export const getAlert = (id: string) => apiFetch<ApiAlert>(`/alerts/${encodeURIComponent(id)}`);
 

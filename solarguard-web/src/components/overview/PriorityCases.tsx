@@ -5,15 +5,16 @@ import { StatusChip } from "@/components/ui/StatusChip";
 import { VerificationLabel } from "@/components/ui/VerificationLabel";
 import { confidenceBand } from "@/lib/domain";
 import { CASE_STATUS_LABEL as STATUS_LABEL } from "@/lib/labels";
-import type { FleetOverview } from "@/lib/api/fleet";
+import type { RecoveryCaseSummary } from "@/lib/fixtures";
+import type { CasePipeline } from "@/lib/view";
 import { formatNumber } from "@/lib/format";
 
 export function PriorityCases({
   cases,
   pipeline,
 }: {
-  cases: FleetOverview["rankedCases"];
-  pipeline: FleetOverview["pipeline"];
+  cases: RecoveryCaseSummary[];
+  pipeline: CasePipeline;
 }) {
   if (cases.length === 0) {
     return (

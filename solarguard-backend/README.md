@@ -7,7 +7,7 @@ SQLite by default; PostgreSQL through `DATABASE_URL`.
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest -q                              # 35 tests
+python -m pytest -q                              # 38 tests
 python scripts/make_demo_csv.py data             # two synthetic demo CSVs (not customer data)
 uvicorn app.main:app --reload                    # http://localhost:8000/docs
 ```
@@ -21,6 +21,7 @@ Docker + Postgres: copy `.env.example` to `.env`, set `POSTGRES_PASSWORD`, then 
 | Register a site | `POST /sites` |
 | Upload CSV (validate, hourly resample, baseline, detect) | `POST /sites/{id}/telemetry` (multipart `file`, optional `timezone`) |
 | Review alerts | `GET /alerts`, `GET /alerts/{AL-0001}` |
+| Per-site telemetry extent (latest hour with data, baseline source) | `GET /sites/summary` |
 | Open a recovery case | `POST /alerts/{id}/case` |
 | Correct cause / set a recoverable estimate | `PATCH /cases/{RC-0001}` |
 | Confirm, reject, assign, start, resolve | `POST /cases/{id}/transition` |

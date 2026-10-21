@@ -54,11 +54,17 @@ export interface EnergySummary {
 
 /**
  * Integrate mean-power samples into energy.
- * kWh = sum(kW * intervalHours). Intervals with missing actual data are excluded from BOTH
+ * kWh = sum(kW * intervalHours). Intervals with a missing actual OR expected value are excluded from BOTH
  * actual and expected so the comparison stays like-for-like.
  */
+/** Anything with an actual and an expected value; either may be missing (null). */
+export interface EnergyPoint {
+  actualKw: number | null;
+  expectedKw: number | null;
+}
+
 export function summariseEnergy(
-  points: PowerPoint[],
+  points: EnergyPoint[],
   intervalHours: number,
 ): EnergySummary {
   let actual = 0;
@@ -66,7 +72,7 @@ export function summariseEnergy(
   let valid = 0;
   let skipped = 0;
   for (const p of points) {
-    if (p.actualKw === null) {
+    if (p.actualKw === null || p.expectedKw === null) {
       skipped += 1;
       continue;
     }

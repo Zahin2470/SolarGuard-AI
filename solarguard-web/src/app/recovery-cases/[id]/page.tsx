@@ -13,6 +13,7 @@ import { ImpactStatusLabel } from "@/components/ui/ImpactStatusLabel";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { Skeleton } from "@/components/ui/States";
+import { SourceBadge } from "@/components/ui/SourceBadge";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { ApiError } from "@/lib/api/client";
 import { getAlert, getCase, getSite, getTelemetry } from "@/lib/api/live";
@@ -40,7 +41,8 @@ async function EvidenceChart({ alert }: { alert: ApiAlert }) {
     expectedKw: r.expected_kw,
   }));
   const sources = new Set(rows.map((r) => r.expected_source).filter(Boolean));
-  const expectedLabel = sources.has("derived")
+  const derived = [...sources].some((x) => x !== "provided");
+  const expectedLabel = derived
     ? "Expected power, derived from this site's own history (kW)"
     : "Expected power, provided with the upload (kW)";
   return (
@@ -52,7 +54,7 @@ async function EvidenceChart({ alert }: { alert: ApiAlert }) {
         highlight={{ from: wf, label: "Alert evidence window" }}
         expectedLabel={expectedLabel}
       />
-      {sources.has("derived") ? (
+      {derived ? (
         <p className="mt-3 rounded-lg border border-dashed border-warn-line bg-warn-soft/50 p-3 text-xs text-ink-muted">
           <span className="font-semibold text-warn">Derived baseline.</span> The expected line is a trailing median of
           this site&apos;s own recent days, so it can absorb a fault that has lasted several days. It is useful for
@@ -101,6 +103,7 @@ async function CaseDetail({ params }: { params: PageProps<"/recovery-cases/[id]"
               {site ? ` · ${formatNumber(site.capacity_kwp)} kWp` : ""}
             </span>
             <span>Alert {c.alert_id}</span>
+            <SourceBadge source="api" />
           </>
         }
       />

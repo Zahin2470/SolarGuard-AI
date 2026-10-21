@@ -4,6 +4,8 @@ import { EmptyState } from "@/components/ui/States";
 
 export default function NotFound() {
   return (
+    <>
+      <h1 className="sr-only">Page not found</h1>
     <Panel title="Not found">
       <EmptyState
         title="We could not find that page"
@@ -19,5 +21,6 @@ export default function NotFound() {
         The site, alert or page you opened does not exist in this workspace.
       </EmptyState>
     </Panel>
+    </>
   );
 }

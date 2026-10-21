@@ -1,12 +1,11 @@
-/** Site service boundary: list + detail. Backed by demo fixtures until the API exists. */
-import { summariseEnergy, type PowerPoint } from "../domain";
-import {
-  buildFleetData,
-  INTERVAL_HOURS,
-  type AlertSummary,
-  type RecoveryCaseSummary,
-  type SiteSummary,
-} from "../fixtures";
+/** Site service boundary: list + detail. Live when SOLARGUARD_API_URL is set, else demo fixtures. */
+import type { ChartPoint } from "@/components/overview/PowerChart";
+import { summariseEnergy } from "../domain";
+import { buildFleetData, INTERVAL_HOURS, type SiteSummary } from "../fixtures";
+import { CASE_STATUS_LABEL } from "../labels";
+import type { AlertRow, SiteCaseRow } from "../view";
+import { isLive } from "./client";
+import { loadLiveFleet, loadLiveSiteDetail, NOT_IN_DATA, WINDOW_HOURS } from "./live-fleet";
 
 export interface SiteList {
   source: "demo" | "api";
@@ -30,53 +29,76 @@ export interface SiteDetail {
   source: "demo" | "api";
   now: number;
   site: SiteSummary;
-  series: PowerPoint[];
+  series: ChartPoint[];
   energy72h: ReturnType<typeof summariseEnergy>;
   quality: DataQuality;
-  alerts: AlertSummary[];
-  cases: RecoveryCaseSummary[];
+  alerts: AlertRow[];
+  cases: SiteCaseRow[];
 }
 
 export async function getSites(): Promise<SiteList> {
+  if (await isLive()) {
+    const f = await loadLiveFleet();
+    return { source: "api", now: f.now, sites: f.sites };
+  }
   const d = buildFleetData();
   return { source: "demo", now: d.now, sites: d.sites };
 }
 
-export async function listSiteIds(): Promise<string[]> {
-  return buildFleetData().sites.map((s) => s.id);
+function qualityFrom(series: ChartPoint[], present: string[]): DataQuality {
+  const received = series.filter((p) => p.actualKw !== null).length;
+  const lastReported = [...series].reverse().find((p) => p.actualKw !== null);
+  return {
+    windowHours: series.length,
+    expectedIntervals: series.length,
+    receivedIntervals: received,
+    missingIntervals: series.length - received,
+    completenessPct: series.length ? (received / series.length) * 100 : 0,
+    lastReportedEnd: lastReported ? lastReported.t + 3_600_000 : null,
+    present,
+    missing: NOT_IN_DATA,
+  };
 }
 
 export async function getSiteDetail(id: string): Promise<SiteDetail | null> {
+  if (await isLive()) {
+    const d = await loadLiveSiteDetail(id);
+    if (!d) return null;
+    return {
+      source: "api",
+      now: d.now,
+      site: d.site,
+      series: d.series,
+      energy72h: summariseEnergy(d.series, 1),
+      quality: qualityFrom(d.series, d.present),
+      alerts: d.alerts,
+      cases: d.cases,
+    };
+  }
+
   const d = buildFleetData();
   const site = d.sites.find((s) => s.id === id);
   if (!site) return null;
   const series = d.siteSeries[id];
-  const received = series.filter((p) => p.actualKw !== null).length;
-  const lastReported = [...series].reverse().find((p) => p.actualKw !== null);
-
   return {
     source: "demo",
     now: d.now,
     site,
     series,
     energy72h: summariseEnergy(series, INTERVAL_HOURS),
-    quality: {
-      windowHours: series.length,
-      expectedIntervals: series.length,
-      receivedIntervals: received,
-      missingIntervals: series.length - received,
-      completenessPct: (received / series.length) * 100,
-      lastReportedEnd: lastReported ? lastReported.t + 3_600_000 : null,
-      present: ["AC power (kW), hourly mean", "Expected power (kW), demo baseline model"],
-      missing: [
-        "Irradiance and module temperature",
-        "String-level current and voltage",
-        "Inverter status codes",
-        "Curtailment / export-limit flags",
-        "Maintenance records beyond recovery cases",
-      ],
-    },
+    quality: qualityFrom(series, ["AC power (kW), hourly mean", "Expected power (kW), demo baseline model"]),
     alerts: d.alerts.filter((a) => a.siteId === id),
-    cases: d.cases.filter((c) => c.siteId === id),
+    cases: d.cases
+      .filter((c) => c.siteId === id)
+      .map((c) => ({
+        id: c.id,
+        title: c.title,
+        statusLabel: CASE_STATUS_LABEL[c.status],
+        owner: c.owner,
+        verification: c.verification,
+        note: c.verificationNote,
+      })),
   };
 }
+
+export { WINDOW_HOURS };

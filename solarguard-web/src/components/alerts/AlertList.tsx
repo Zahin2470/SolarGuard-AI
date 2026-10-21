@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/States";
 import { StatusChip } from "@/components/ui/StatusChip";
 import type { Severity } from "@/lib/domain";
-import type { AlertSummary } from "@/lib/fixtures";
+import type { AlertRow } from "@/lib/view";
 import { formatAgo, formatDayTime, formatPct } from "@/lib/format";
 
 type StatusFilter = "all" | "open" | "closed";
@@ -17,7 +17,7 @@ const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
 ];
 const SEVERITY_TIER: Record<Severity, number> = { critical: 0, warning: 1, info: 2 };
 
-export function AlertList({ alerts, now }: { alerts: AlertSummary[]; now: number }) {
+export function AlertList({ alerts, now }: { alerts: AlertRow[]; now: number }) {
   const [status, setStatus] = useState<StatusFilter>("open");
   const [severity, setSeverity] = useState<"all" | Severity>("all");
 
@@ -107,7 +107,7 @@ export function AlertList({ alerts, now }: { alerts: AlertSummary[]; now: number
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusChip status={a.severity} />
                   <span className="text-xs font-medium text-ink-muted">
-                    {a.id} · {a.status === "closed" ? "Closed" : `Open · case ${a.caseId}`}
+                    {a.id} · {a.status === "closed" ? "Closed" : "Open"} · {a.caseId ? `case ${a.caseId}` : "no case yet"}
                   </span>
                 </div>
                 <p className="mt-2 text-sm font-semibold text-ink">

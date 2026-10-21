@@ -30,6 +30,17 @@ class SiteOut(BaseModel):
     created_at: datetime
 
 
+class SiteDataSummaryOut(BaseModel):
+    """What telemetry a site has, so clients can pick a window without paging through rows."""
+
+    site_id: str
+    hours_stored: int
+    first_hour: datetime | None
+    last_hour: datetime | None
+    last_hour_with_data: datetime | None  # latest hour whose actual power is not null
+    expected_sources: list[str]  # e.g. ["provided"], ["trailing_median"], or both
+
+
 class TelemetryOut(BaseModel):
     ts: datetime
     actual_kw: float | None
