@@ -323,7 +323,7 @@ export function PowerChart({
         <div
           id={tableId}
           tabIndex={0}
-          className="max-h-64 overflow-auto border-t border-line"
+          className="relative max-h-64 overflow-auto border-t border-line"
           aria-label="Chart data table, scrollable"
         >
           <table className="num w-full text-left text-xs">

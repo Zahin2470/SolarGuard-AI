@@ -148,7 +148,7 @@ export function SitesTable({ sites, now }: { sites: SiteSummary[]; now: number }
       ) : (
         <>
           {/* Wide screens: table */}
-          <div className="hidden overflow-x-auto md:block">
+          <div className="relative hidden overflow-x-auto md:block">
             <table className="num w-full min-w-[720px] text-left text-sm">
               <caption className="sr-only">Site performance over the last 24 hours</caption>
               <thead className="text-xs text-ink-muted">

@@ -53,7 +53,7 @@ export function VerificationPanel({ c }: { c: ApiCase }) {
       </div>
       <p className="text-sm text-ink">{d.summary}</p>
 
-      <div className="overflow-x-auto rounded-lg border border-line">
+      <div className="relative overflow-x-auto rounded-lg border border-line">
         <table className="num w-full min-w-[26rem] text-xs">
           <caption className="sr-only">Performance ratio before and after the recorded action</caption>
           <thead className="bg-sunken text-ink-muted">

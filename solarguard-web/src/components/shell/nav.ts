@@ -22,7 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/alerts", label: "Alerts", icon: Bell, built: true },
   { href: "/recovery-cases", label: "Recovery Cases", icon: LifeBuoy, built: true },
   { href: "/upload", label: "Upload data", icon: Upload, built: true },
-  { href: "/reports", label: "Reports & Impact", icon: FileBarChart2, built: false },
+  { href: "/reports", label: "Reports & Impact", icon: FileBarChart2, built: true },
 ];
 
 export function findNavItem(pathname: string): NavItem | undefined {

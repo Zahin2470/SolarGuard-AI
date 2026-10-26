@@ -1,4 +1,4 @@
-# SolarGuard AI: web app (Phase 5)
+# SolarGuard AI: web app (Phase 6)
 
 Every data page shows a source badge:
 
@@ -13,6 +13,7 @@ Nothing on a demo screen is customer telemetry or a measured result.
 npm install
 cp .env.example .env.local     # set SOLARGUARD_API_URL (and SOLARGUARD_API_KEY if the API uses one)
 npm run dev                    # http://localhost:3000
+npm test                       # vitest: ledger, CSV, energy maths, priority rule
 npm run lint && npx tsc --noEmit && npm run build
 ```
 
@@ -66,7 +67,16 @@ How live figures are derived (so you can challenge them):
 - **Alerts.** Shown as detected deviations. The rule-based detector supplies no cause, confidence or recommended check, so none is displayed; a person records a hypothesis on the recovery case.
 - **Activity feed.** Alert detections and each case's opened and last-updated events (the list endpoint carries no full history).
 
-Reports & Impact is still a labelled "not built yet" page, with no placeholder numbers.
+### Phase 6: Reports & Impact
+
+| Area | Where |
+|---|---|
+| Ledger rules (pure, unit-tested) | `src/lib/ledger.ts`, `src/lib/__tests__/ledger.test.ts` |
+| Evidence ladder: estimated / potential / recorded / measured / verified, side by side, never summed | `src/components/reports/EvidenceLadder.tsx` |
+| Per-case ledger with evidence level on every figure | `src/components/reports/LedgerTable.tsx` |
+| CSV export (formula-injection safe) | `src/app/reports/export/route.ts`, `src/lib/csv.ts` |
+
+Ledger rules: rejected cases are shown but excluded from every lane. A derived-baseline improvement is "measured" and is never added to "verified". Post-window energy covers the 7 days after the action only; it is not annualised. Energy only: no tariff or carbon figure exists until a sourced input is provided. Verified shows "None yet" rather than 0 kWh when nothing has passed the check.
 
 ## Truthfulness rules implemented
 
@@ -97,4 +107,4 @@ Reports & Impact is still a labelled "not built yet" page, with no placeholder n
 
 ## Next phase
 
-Reports & Impact (ledger of verified, measured and potential figures, kept separate), then frontend tests.
+Authentication and roles (so "Acting as" becomes a real identity), Alembic migrations, a committed Playwright suite for the case lifecycle, and Docker/PostgreSQL validation on a machine with Docker. Tariff and carbon figures only once a sourced input is provided.
