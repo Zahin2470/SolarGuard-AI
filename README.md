@@ -17,11 +17,8 @@
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.1-D71F00)
-![Tests](https://img.shields.io/badge/tests-38%20backend%20%7C%2013%20frontend-2EA44F)
 
 **A solar operations workspace that refuses to claim savings it can't prove.**
-
-[Overview](#-overview) · [Screenshots](#-screenshots) · [Features](#-features) · [Evidence ladder](#-the-evidence-ladder) · [Architecture](#-architecture) · [File structure](#-file-structure) · [Quick start](#-quick-start) · [API](#-api-reference) · [Limitations](#-honest-limitations)
 
 </div>
 
@@ -51,16 +48,16 @@ It is **human-in-the-loop by design**. The software proposes and measures; peopl
 
 | Overview (live API) | Telemetry upload |
 |---|---|
-| ![Overview](docs/screenshots/overview.png) | ![Upload](docs/screenshots/upload.png) |
+| ![Overview](docs/screenshot/overview.png) | ![Upload](docs/screenshot/upload.png) |
 
 | A verified case | Impact ledger |
 |---|---|
-| ![Verified case](docs/screenshots/case-verified.png) | ![Reports](docs/screenshots/reports.png) |
+| ![Verified case](docs/screenshot/case-verified.png) | ![Reports](docs/screenshot/reports.png) |
 
 <details>
 <summary>📱 Mobile view</summary>
 
-<img src="docs/screenshots/mobile.png" alt="Mobile layout" width="320" />
+<img src="docs/screenshot/mobile.png" alt="Mobile layout" width="320" />
 
 </details>
 
@@ -144,7 +141,7 @@ Generated, vendored and local files (`node_modules/`, `.next/`, `.git/`, `__pyca
 solarguard-ai/
 ├── README.md                          ← you are here
 ├── docs/
-│   └── screenshots/                   synthetic-data screenshots used above
+│   └── screenshot/                    synthetic-data screenshots used above
 │
 ├── solarguard-backend/                ── FastAPI service ──────────────────────
 │   ├── app/
